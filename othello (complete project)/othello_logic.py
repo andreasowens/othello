@@ -1,0 +1,286 @@
+#andres owens // 58449528 // ics 32 // project 4
+
+NONE = 0
+BLACK = 1
+WHITE = 2
+
+LEN = 50
+ROW = 8
+COLUMN = 8
+TURN = 'B'
+SETUP = 'B'
+WIN_METH = '>'
+
+directions = [[-1,0],[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1]]
+
+class InvalidDiscError(Exception):
+    '''
+    Class will be raised only if user inputs invalid disc drop.
+    '''
+    pass
+
+class OthelloGameOverError(Exception):
+    '''
+    Class will be raised if user inputs input after game is over. 
+    '''
+    pass
+
+class InvalidInputError(Exception):
+    '''
+    Class will be raised only if user inputs invald input when starting
+    game.
+    '''
+    pass
+
+class Othello_State:
+    '''
+    Class contains logic for game of Othello and contains both private
+    and public functions.
+    '''
+    def __init__(self):
+        
+        self._row = ROW
+        self._column = COLUMN
+        self._turn = self._define_players()
+        self._setup = SETUP
+        self._valid = []
+        self._disc_list = []
+        self._flip = []
+        self._opp_disc = ''
+        self._board = []
+        self._win = WIN_METH
+                
+        for row in range(ROW):
+            self._board.append([])
+            for col in range(COLUMN):
+                self._board[-1].append(NONE)
+        self._initial_board()
+
+
+    def _define_players(self) -> int:
+        '''
+        Function takes in 'B' and 'W' and returns BLACK and WHITE
+        '''
+        if TURN == 'B':
+            return BLACK
+        else:
+            return WHITE
+            
+
+    def rotate_turn(self) -> None:
+        '''
+        Function rotates turn for every cycle of drops and returns turn
+        '''
+        self._valid = []
+        self._disc_list = []
+        self._flip = []
+        if self._turn == BLACK:
+            self._turn = WHITE
+        else:
+            self._turn = BLACK
+        return self._turn
+
+    
+    def return_turn(self) -> None:
+        '''
+        Function returns current turn 
+        '''
+        return ('B' if self._turn == BLACK else 'W')
+
+    
+    def return_flip_list(self) -> None:
+        '''
+        Function takes current list of flippable discs and returns
+        clean list = []
+        '''
+        self._flip = []
+        return self._flip
+
+        
+    def _return_valid(self) -> None:
+        '''
+        Function returns list of valid user inputs
+        '''
+        return self._valid
+
+
+    def return_board(self) -> [[int]]:
+        '''
+        Function clears flip list and returns current board
+        '''
+        self._flip = []
+        return self._board
+
+
+    def _initial_board(self) -> None:
+        '''
+        Function sets up initial board according to fourth line of input
+        by user
+        '''
+        if self._setup == 'B':
+            initial_top_left = self._board[int(self._row/2)-1][int(self._column/2)-1] = BLACK
+            initial_bottom_right = self._board[int(self._row/2)][int(self._column/2)] = BLACK
+            initial_top_right = self._board[int(self._row/2)-1][int(self._column/2)] = WHITE
+            initial_bottom_left = self._board[int(self._row/2)][int(self._column/2)-1] = WHITE
+        else:
+            initial_top_left = self._board[int(self._row/2)-1][int(self._column/2)-1] = WHITE
+            initial_bottom_right = self._board[int(self._row/2)][int(self._column/2)] = WHITE
+            initial_top_right = self._board[int(self._row/2)-1][int(self._column/2)] = BLACK
+            initial_bottom_left = self._board[int(self._row/2)][int(self._column/2)-1] = BLACK
+
+        
+    def score_counter(self) -> None:
+        '''
+        Function counts score and consistently updates based on current
+        game board
+        '''
+        black_score = 0
+        white_score = 0
+        for row in range(self._row):
+            for col in range(self._column):
+                if self._board[row][col] == BLACK:
+                    black_score += 1
+                elif  self._board[row][col] == WHITE:
+                    white_score += 1
+        return (black_score, white_score)
+            
+
+    def _disc_color_match(self) -> None:
+        '''
+        Function generates list of discs that match current player turn
+        '''
+        for row in range(self._row):
+            for col in range(self._column):
+                if self._board[row][col]== self._turn:
+                    self._disc_list.append([row,col])
+        return self._disc_list
+
+
+    def _player_flip(self) -> None:
+        '''
+        Function, based on current flip, assigns new value to
+        opposite disc for usage in validate_list function
+        '''
+        if self._turn == BLACK:
+            self._opp_disc = WHITE
+        elif self._turn == WHITE:
+            self._opp_disc = BLACK
+
+
+    def _valid_pos_check(self,disc_row,disc_col) -> None:
+        '''
+        Function checks user input and inputs generated by validate_list
+        and assures that input is within game board and not out of index
+        '''
+        return 0 <= disc_row < self._row and 0 <= disc_col < self._column
+    
+
+    def _validate_list(self) -> None:
+        '''
+        Function generates list of valid inputs for current user and uses
+        list to detect if game is over given that no user left playing,
+        has valid move (self._valid = [])
+        '''
+        adjacent = []
+        opp_disc = BLACK if self._turn == WHITE else WHITE
+        for coor in self._disc_list:
+            for x,y in directions:
+                a = self._row_adjacent = coor[0] + x
+                b = self._col_adjacent = coor[1] + y
+                
+                if self._valid_pos_check(a,b) and self._board[a][b] == opp_disc:
+                    adjacent.append([a,b])
+                    
+                    while self._valid_pos_check(a,b) and self._board[a][b] == opp_disc:
+                        a = a + x
+                        b = b + y
+                        if not self._valid_pos_check(a,b):
+                                break
+                        if self._valid_pos_check(a,b):
+                            if self._board[a][b] == NONE:
+                                self._valid.append([a,b])
+        self._player_flip()
+
+        
+    def _disc_flip(self, x_coor: int, y_coor: int) -> None:
+        '''
+        Function generates list of discs to flip once user enters
+        desired input
+        '''
+        self._flip = []
+        temp = []
+        opp_disc = BLACK if self._turn == WHITE else WHITE
+        
+        for x,y in directions:
+            a = x_coor + x
+            b = y_coor + y
+            temp = []
+            while self._valid_pos_check(a,b) and self._board[a][b] == opp_disc:
+                temp.append([a,b])
+                a = a + x
+                b = b + y
+            if self._valid_pos_check(a,b):
+                if self._board[a][b] == self._turn:
+                    self._flip.extend(temp)
+
+
+    def disc_drop(self, x_coor, y_coor) -> None:
+        '''
+        Function executes command and drops requested disc given that
+        all pre-existing conditions are met  
+        '''
+        while True:
+            if [x_coor,y_coor] in self._valid:
+                self._board[x_coor][y_coor] = self._turn
+                self._validate_list()
+                self._disc_flip(x_coor, y_coor)
+                new_board = self._disc_change()
+                return new_board
+            else:
+                raise InvalidDiscError("Sorry: Invalid Disc Input.")
+
+
+    def _disc_change(self) -> None:
+        '''
+        Function changes all discs within self._flip to color of current
+        player
+        '''
+        for discs in self._flip:
+            self._board[discs[0]][discs[1]] = self._turn
+        return self._board
+
+
+    def winner_of_game(self) -> None:
+        '''
+        Function prints winner of game based on fifth line of input and
+        number of discs on board. 2 different playing methods. (< or >)
+        '''
+        if self._win == '>':
+            if self.score_counter()[0] > self.score_counter()[1]:
+                print('WINNER: BLACK')
+            elif self.score_counter()[1] > self.score_counter()[0]:
+                print('WINNER: WHITE')
+            else:
+                print('WINNER: NONE')
+        else:
+            if self.score_counter()[0] < self.score_counter()[1]:
+                print('WINNER: BLACK')
+            elif self.score_counter()[1] < self.score_counter()[0]:
+                print('WINNER: WHITE')
+            else:
+                print('WINNER: NONE')
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
